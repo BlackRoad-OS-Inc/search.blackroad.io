@@ -521,5 +521,165 @@ console.log('%cBlackRoad OS','color:#FF2255;font-size:16px;font-weight:bold');
 console.log('%cRemember the Road. Pave Tomorrow.','color:#888;font-size:11px');
 console.log('%c'+document.title,'color:#aaa;font-size:10px');
 </script>
+<script>
+// AI Chat Panel for BlackRoad Search
+(function(){
+  // Add CSS
+  var style = document.createElement('style');
+  style.textContent = `
+    .ai-toggle{position:fixed;bottom:44px;right:16px;width:44px;height:44px;border-radius:50%;background:var(--g135,linear-gradient(135deg,#FF6B2B,#00D4FF));border:none;color:#fff;font-size:18px;cursor:pointer;z-index:100;box-shadow:0 2px 12px rgba(136,68,255,.3);transition:transform .2s}
+    .ai-toggle:hover{transform:scale(1.1)}
+    .ai-panel{position:fixed;bottom:44px;right:16px;width:360px;max-height:500px;background:#0a0a0a;border:1px solid #1a1a1a;border-radius:16px;z-index:100;display:none;flex-direction:column;box-shadow:0 4px 24px rgba(0,0,0,.5)}
+    .ai-panel.open{display:flex}
+    .ai-header{padding:12px 16px;border-bottom:1px solid #1a1a1a;display:flex;align-items:center;gap:8px}
+    .ai-header-title{font-size:13px;font-weight:600;color:#ddd;flex:1}
+    .ai-header-close{background:none;border:none;color:#666;cursor:pointer;font-size:16px}
+    .ai-header-clear{background:none;border:none;color:#555;cursor:pointer;font-family:var(--jb,'JetBrains Mono',monospace);font-size:9px}
+    .ai-messages{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;min-height:200px;max-height:350px}
+    .ai-msg{max-width:90%;padding:8px 12px;border-radius:10px;font-size:12px;line-height:1.5;word-wrap:break-word}
+    .ai-msg.user{background:#111;border:1px solid #222;align-self:flex-end;color:#ddd;border-bottom-right-radius:4px}
+    .ai-msg.ai{background:#0d0d0d;border:1px solid #1a1a1a;align-self:flex-start;color:#ccc;border-bottom-left-radius:4px}
+    .ai-msg.ai .ai-tag{font-family:var(--jb,'JetBrains Mono',monospace);font-size:8px;color:#555;margin-bottom:4px}
+    .ai-msg.system{align-self:center;font-family:var(--jb,'JetBrains Mono',monospace);font-size:9px;color:#444;background:none;border:none}
+    .ai-typing{font-family:var(--jb,'JetBrains Mono',monospace);font-size:9px;color:#555;padding:4px 12px;display:none}
+    .ai-typing.on{display:block}
+    .ai-input-area{padding:8px 12px;border-top:1px solid #1a1a1a;display:flex;gap:6px}
+    .ai-input{flex:1;padding:8px 10px;background:#111;border:1px solid #1a1a1a;border-radius:8px;color:#f5f5f5;font-size:12px;font-family:var(--sg,'Space Grotesk',sans-serif);outline:none;resize:none}
+    .ai-input:focus{border-color:#333}
+    .ai-input::placeholder{color:#444}
+    .ai-send{padding:8px 14px;background:#f5f5f5;color:#000;border:none;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--sg,'Space Grotesk',sans-serif)}
+    .ai-send:disabled{opacity:.3}
+    .ai-context{font-family:var(--jb,'JetBrains Mono',monospace);font-size:8px;color:#333;padding:2px 12px}
+    @media(max-width:600px){.ai-panel{width:calc(100% - 32px);right:16px;bottom:44px}}
+  `;
+  document.head.appendChild(style);
+
+  // Add toggle button
+  var toggle = document.createElement('button');
+  toggle.className = 'ai-toggle';
+  toggle.innerHTML = '🧠';
+  toggle.title = 'Ask AI about BlackRoad';
+  toggle.onclick = function(){ panel.classList.toggle('open'); toggle.style.display = panel.classList.contains('open') ? 'none' : 'flex'; if(panel.classList.contains('open')) aiInput.focus(); };
+  document.body.appendChild(toggle);
+
+  // Add panel
+  var panel = document.createElement('div');
+  panel.className = 'ai-panel';
+  panel.innerHTML = `
+    <div class="ai-header">
+      <div style="width:6px;height:6px;border-radius:50%;background:var(--g135,#8844FF)"></div>
+      <div class="ai-header-title">Ask AI</div>
+      <button class="ai-header-clear" onclick="clearAI()">Clear</button>
+      <button class="ai-header-close" onclick="document.querySelector('.ai-panel').classList.remove('open');document.querySelector('.ai-toggle').style.display='flex'">✕</button>
+    </div>
+    <div class="ai-messages" id="ai-msgs">
+      <div class="ai-msg system">Ask anything about BlackRoad OS — repos, infrastructure, how-to</div>
+    </div>
+    <div class="ai-typing" id="ai-typing"></div>
+    <div class="ai-context" id="ai-context"></div>
+    <div class="ai-input-area">
+      <input class="ai-input" id="ai-input" placeholder="Ask a question..." onkeydown="if(event.key==='Enter')askAI()">
+      <button class="ai-send" id="ai-send" onclick="askAI()">Ask</button>
+    </div>
+  `;
+  document.body.appendChild(panel);
+
+  var aiInput = document.getElementById('ai-input');
+  var aiMsgs = document.getElementById('ai-msgs');
+  var aiTyping = document.getElementById('ai-typing');
+  var aiContext = document.getElementById('ai-context');
+  var conversation = [];
+  var aiBusy = false;
+
+  // Ollama endpoints to try
+  var OLLAMA_ENDPOINTS = ['/ollama', 'https://chat-blackroad.amundsonalexa.workers.dev'];
+  var ollamaUrl = '';
+
+  // Find working endpoint
+  async function findOllama(){
+    for(var ep of OLLAMA_ENDPOINTS){
+      try{
+        var r = await fetch(ep + '/api/tags', {signal: AbortSignal.timeout(5000)});
+        if(r.ok){ ollamaUrl = ep; return; }
+      }catch(e){}
+    }
+  }
+  findOllama();
+
+  function addAIMsg(cls, text, tag){
+    var el = document.createElement('div');
+    el.className = 'ai-msg ' + cls;
+    if(tag) el.innerHTML = '<div class="ai-tag">' + tag + '</div>' + text.replace(/\n/g,'<br>');
+    else el.textContent = text;
+    aiMsgs.appendChild(el);
+    aiMsgs.scrollTop = 999999;
+  }
+
+  window.clearAI = function(){
+    conversation = [];
+    aiMsgs.innerHTML = '<div class="ai-msg system">Conversation cleared. Ask anything.</div>';
+  };
+
+  window.askAI = async function(){
+    var text = aiInput.value.trim();
+    if(!text || aiBusy) return;
+    aiInput.value = '';
+    addAIMsg('user', text);
+
+    // Build context from current search results
+    var searchQ = document.getElementById('q')?.value || '';
+    var resultEls = document.querySelectorAll('.result-name');
+    var topResults = Array.from(resultEls).slice(0,5).map(function(el){ return el.textContent; }).join(', ');
+    
+    var contextStr = '';
+    if(searchQ) contextStr = 'User is searching for: "' + searchQ + '". ';
+    if(topResults) contextStr += 'Top results: ' + topResults + '. ';
+    aiContext.textContent = contextStr ? '📎 ' + contextStr.slice(0,80) : '';
+
+    conversation.push({role:'user', content: text});
+    aiBusy = true;
+    document.getElementById('ai-send').disabled = true;
+    aiTyping.textContent = 'Thinking...';
+    aiTyping.classList.add('on');
+
+    var systemPrompt = 'You are the BlackRoad Search AI assistant. You help users find repos, understand the ecosystem, and answer questions about BlackRoad OS. The ecosystem has 2,300+ repos across 34 GitHub orgs, 7 Pi nodes, 51 Ollama models, 193+ product pages. Be concise (2-3 sentences). If the user searched for something, use that context. ' + contextStr;
+
+    try {
+      var endpoint = ollamaUrl || OLLAMA_ENDPOINTS[0];
+      var r = await fetch(endpoint + '/api/chat', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          model: 'phi',
+          messages: [{role:'system', content: systemPrompt}].concat(conversation.slice(-10)),
+          stream: false
+        }),
+        signal: AbortSignal.timeout(90000)
+      });
+      var d = await r.json();
+      var reply = d.message?.content || d.response || 'No response — Ollama may be loading.';
+      conversation.push({role:'assistant', content: reply});
+      var tokens = d.eval_count || '?';
+      addAIMsg('ai', reply, 'phi · ' + tokens + ' tokens');
+    } catch(e) {
+      addAIMsg('system', 'AI offline — try again or search repos directly');
+    }
+
+    aiBusy = false;
+    document.getElementById('ai-send').disabled = false;
+    aiTyping.classList.remove('on');
+    aiInput.focus();
+  };
+
+  // Keyboard shortcut: Ctrl+K or Cmd+K to toggle AI
+  document.addEventListener('keydown', function(e){
+    if((e.metaKey || e.ctrlKey) && e.key === 'k'){
+      e.preventDefault();
+      toggle.click();
+    }
+  });
+})();
+
+</script>
 </body>
 </html>
