@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BlackRoad Search</title>
+<meta name="description" content="Search 2,280+ repos across 23 orgs. Find code, tools, docs — everything in the BlackRoad ecosystem.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta property="og:title" content="BlackRoad Search — 2,280+ repos, 23 orgs"><meta property="og:description" content="Search the entire BlackRoad ecosystem. Code, tools, docs, AI models, infrastructure."><meta property="og:url" content="https://search.blackroad.io"><meta property="og:image" content="https://images.blackroad.io/brand/blackroad-og.png"><meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="BlackRoad Search"><meta name="twitter:description" content="Search 2,280+ repos across 23 orgs.">
+<link rel="canonical" href="https://search.blackroad.io">
+<link rel="icon" type="image/png" href="https://images.blackroad.io/brand/favicon.png">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"BlackRoad Search","url":"https://search.blackroad.io","potentialAction":{"@type":"SearchAction","target":"https://search.blackroad.io?q={search_term_string}","query-input":"required name=search_term_string"},"author":{"@type":"Organization","name":"BlackRoad OS, Inc.","url":"https://blackroad.io","founder":{"@type":"Person","name":"Alexa Louise Amundson"}}}</script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}html{-webkit-font-smoothing:antialiased;scroll-behavior:smooth}
+:root{--g:linear-gradient(90deg,#FF6B2B,#FF2255,#CC00AA,#8844FF,#4488FF,#00D4FF);--g135:linear-gradient(135deg,#FF6B2B,#FF2255,#CC00AA,#8844FF,#4488FF,#00D4FF);--bg:#000;--border:#1a1a1a;--sub:#999;--dim:#333;--sg:'Space Grotesk',sans-serif;--jb:'JetBrains Mono',monospace}
+body{background:var(--bg);color:#f5f5f5;font-family:var(--sg);overflow-x:hidden;padding-bottom:48px}
+.grad-bar{height:4px;background:var(--g)}
+.container{max-width:100%;margin:0 auto;padding:32px 16px 0}
+.section{margin-bottom:40px}
+.section-label{font-family:var(--jb);font-size:10px;font-weight:500;color:var(--sub);letter-spacing:.12em;text-transform:uppercase;margin-bottom:14px}
+.title{font-size:24px;font-weight:700;color:#fff;margin-bottom:4px}
+.subtitle{font-size:13px;color:#aaa;margin-bottom:24px}
+.mark{width:24px;height:3px;border-radius:2px;background:var(--g);margin-bottom:16px}
+.card{border:1px solid var(--border);border-radius:10px;padding:16px;background:#0a0a0a;transition:border-color .2s;margin-bottom:10px}
+.card:hover{border-color:var(--dim)}
+.stat-val{font-size:22px;font-weight:700;color:#fff}
+.stat-label{font-family:var(--jb);font-size:9px;color:#aaa;letter-spacing:.1em;text-transform:uppercase;margin-top:4px}
+.grid-4{display:grid;gap:10px;margin-bottom:16px;grid-template-columns:repeat(2,1fr)}
+.dot{width:6px;height:6px;border-radius:50%;display:inline-block;margin-right:6px}.dot-live{background:var(--g135)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}.pulse{animation:pulse 2s infinite}
+.circle-accent{width:8px;height:8px;border-radius:50%;background:var(--g135);display:inline-block}
+
+/* Search */
+.search-wrap{position:relative;margin-bottom:24px}
+.search-input{width:100%;padding:14px 18px 14px 44px;background:#0a0a0a;border:1px solid var(--border);border-radius:12px;color:#f5f5f5;font-size:16px;font-family:var(--sg);outline:none;transition:border-color .2s}
+.search-input:focus{border-color:#555}
+.search-input::placeholder{color:#444}
+.search-icon{position:absolute;left:16px;top:50%;transform:translateY(-50%);font-size:16px;color:#444}
+.search-count{font-family:var(--jb);font-size:10px;color:#555;margin-bottom:12px}
+
+/* Results */
+.result{display:block;border:1px solid var(--border);border-radius:10px;padding:14px 16px;background:#0a0a0a;margin-bottom:8px;text-decoration:none;transition:border-color .2s}
+.result:hover{border-color:var(--dim)}
+.result-header{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.result-org{font-family:var(--jb);font-size:9px;color:#666}
+.result-name{font-size:14px;font-weight:600;color:#ddd}
+.result-desc{font-size:12px;color:#888;line-height:1.5;margin-bottom:6px}
+.result-meta{display:flex;gap:12px;font-family:var(--jb);font-size:9px;color:#555}
+.result-lang{color:#888}
+.result-stars{color:#888}
+.result-updated{color:#555}
+mark{background:none;color:#fff;font-weight:700}
+
+/* Filters */
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.filter-chip{font-family:var(--jb);font-size:9px;color:#888;background:#0a0a0a;border:1px solid var(--border);border-radius:6px;padding:4px 10px;cursor:pointer;transition:all .15s}
+.filter-chip:hover,.filter-chip.active{border-color:#555;color:#ddd}
+
+/* Org grid */
+.org-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:16px}
+.org-chip{font-size:11px;color:#aaa;padding:8px 12px;border:1px solid var(--border);border-radius:6px;text-decoration:none;display:flex;align-items:center;gap:6px;transition:border-color .2s}
+.org-chip:hover{border-color:var(--dim);color:#ddd}
+.org-chip .dot{width:4px;height:4px}
+.org-chip-count{font-family:var(--jb);font-size:9px;color:#555;margin-left:auto}
+
+@media(min-width:600px){.container{padding:40px 24px 0;max-width:880px}.grid-4{grid-template-columns:repeat(4,1fr)}.org-grid{grid-template-columns:repeat(3,1fr)}.title{font-size:28px}}
+@media(min-width:900px){.container{padding:48px 24px 0}.org-grid{grid-template-columns:repeat(4,1fr)}.title{font-size:32px}}
+</style>
+</head>
+<body>
+<div class="grad-bar"></div>
+<div class="container">
+
+  <div class="section">
+    <div class="mark"></div>
+    <div class="title">BlackRoad Search</div>
+    <div class="subtitle">Search 2,280+ repos across 23 organizations</div>
+  </div>
+
+  <div class="section">
+    <div class="search-wrap">
+      <span class="search-icon">&#x1F50D;</span>
+      <input class="search-input" id="q" placeholder="Search repos, code, tools, docs..." autofocus oninput="search()">
+    </div>
+    <div class="filters" id="filters"></div>
+    <div class="search-count" id="count"></div>
+    <div id="results"></div>
+  </div>
+
+  <div class="section" id="stats-section">
+    <div class="section-label">Ecosystem</div>
+    <div class="grid-4">
+      <div class="card"><div class="stat-val" id="s-repos">...</div><div class="stat-label">Repos</div></div>
+      <div class="card"><div class="stat-val" id="s-orgs">23</div><div class="stat-label">Orgs</div></div>
+      <div class="card"><div class="stat-val" id="s-langs">...</div><div class="stat-label">Languages</div></div>
+      <div class="card"><div class="stat-val" id="s-stars">...</div><div class="stat-label">Stars</div></div>
+    </div>
+  </div>
+
+  <div class="section" id="orgs-section">
+    <div class="section-label">Organizations</div>
+    <div class="org-grid" id="org-grid"></div>
+  </div>
+
+  <div class="section" style="text-align:center">
+    <span style="font-size:11px;color:#aaa"><span class="circle-accent pulse"></span>&nbsp; <a href="https://blackroad.io" style="color:#aaa;text-decoration:none">blackroad.io</a></span>
+  </div>
+</div>
+<div class="grad-bar" style="margin-top:24px"></div>
+
+<script>
+var ORGS=["BlackRoad-OS-Inc","BlackRoad-OS","BlackRoad-AI","BlackRoad-Agents","BlackRoad-Archive","BlackRoad-Cloud","BlackRoad-Education","BlackRoad-Forge","BlackRoad-Foundation","BlackRoad-Gov","BlackRoad-Hardware","BlackRoad-Interactive","BlackRoad-Labs","BlackRoad-Media","BlackRoad-Network","BlackRoad-QI","BlackRoad-Quantum","BlackRoad-README","BlackRoad-Sandbox","BlackRoad-Security","BlackRoad-Studio","BlackRoad-Ventures","Blackbox-Enterprises"];
+
+var allRepos=[];
+var orgCounts={};
+var activeFilter=null;
+var loaded=0;
+
+// Load all repos from all orgs
+async function loadAll(){
+  document.getElementById('count').textContent='Loading repos from '+ORGS.length+' orgs...';
+
+  var promises=ORGS.map(async function(org){
+    var repos=[];
+    var page=1;
+    while(true){
+      try{
+        var r=await fetch('https://api.github.com/orgs/'+org+'/repos?per_page=100&sort=updated&page='+page);
+        if(!r.ok)break;
+        var d=await r.json();
+        if(!d.length)break;
+        d.forEach(function(repo){repo._org=org;});
+        repos=repos.concat(d);
+        if(d.length<100)break;
+        page++;
+      }catch(e){break;}
+    }
+    orgCounts[org]=repos.length;
+    allRepos=allRepos.concat(repos);
+    loaded++;
+    document.getElementById('count').textContent='Loaded '+allRepos.length+' repos from '+loaded+'/'+ORGS.length+' orgs...';
+    updateStats();
+    return repos;
+  });
+
+  await Promise.all(promises);
+
+  // Sort by updated
+  allRepos.sort(function(a,b){return new Date(b.updated_at)-new Date(a.updated_at);});
+
+  updateStats();
+  renderOrgGrid();
+  renderFilters();
+  search();
+  document.getElementById('count').textContent=allRepos.length+' repos indexed across '+ORGS.length+' orgs';
+}
+
+function updateStats(){
+  document.getElementById('s-repos').textContent=allRepos.length;
+  var langs=new Set();var stars=0;
+  allRepos.forEach(function(r){if(r.language)langs.add(r.language);stars+=r.stargazers_count||0;});
+  document.getElementById('s-langs').textContent=langs.size;
+  document.getElementById('s-stars').textContent=stars;
+}
+
+function renderOrgGrid(){
+  document.getElementById('org-grid').innerHTML=ORGS.map(function(org){
+    var count=orgCounts[org]||0;
+    return '<a href="https://github.com/'+org+'" target="_blank" class="org-chip"><span class="dot dot-live"></span>'+org+'<span class="org-chip-count">'+count+'</span></a>';
+  }).join('');
+}
+
+function renderFilters(){
+  var langs={};
+  allRepos.forEach(function(r){if(r.language){langs[r.language]=(langs[r.language]||0)+1;}});
+  var sorted=Object.entries(langs).sort(function(a,b){return b[1]-a[1];}).slice(0,12);
+  document.getElementById('filters').innerHTML=
+    '<span class="filter-chip'+(activeFilter===null?' active':'')+'" onclick="setFilter(null)">All</span>'+
+    sorted.map(function(e){
+      return '<span class="filter-chip'+(activeFilter===e[0]?' active':'')+'" onclick="setFilter(\''+e[0]+'\')">'+e[0]+' ('+e[1]+')</span>';
+    }).join('');
+}
+
+function setFilter(lang){
+  activeFilter=lang;
+  renderFilters();
+  search();
+}
+
+var searchTimeout;
+function search(){
+  clearTimeout(searchTimeout);
+  searchTimeout=setTimeout(doSearch,150);
+}
+
+function doSearch(){
+  var q=document.getElementById('q').value.toLowerCase().trim();
+  var filtered=allRepos;
+
+  if(activeFilter){
+    filtered=filtered.filter(function(r){return r.language===activeFilter;});
+  }
+
+  if(q.length>0){
+    filtered=filtered.filter(function(r){
+      return r.name.toLowerCase().includes(q)||
+        (r.description||'').toLowerCase().includes(q)||
+        (r.language||'').toLowerCase().includes(q)||
+        r._org.toLowerCase().includes(q)||
+        (r.topics||[]).join(' ').toLowerCase().includes(q);
+    });
+    // Sort by relevance (name match first)
+    filtered.sort(function(a,b){
+      var aName=a.name.toLowerCase().includes(q)?0:1;
+      var bName=b.name.toLowerCase().includes(q)?0:1;
+      return aName-bName;
+    });
+  }
+
+  document.getElementById('count').textContent=filtered.length+' results'+(q?' for "'+q+'"':'')+(activeFilter?' in '+activeFilter:'');
+
+  // Show/hide sections based on search state
+  document.getElementById('stats-section').style.display=q?'none':'';
+  document.getElementById('orgs-section').style.display=q?'none':'';
+
+  document.getElementById('results').innerHTML=filtered.slice(0,60).map(function(r){
+    var desc=r.description||'';
+    if(desc.length>120)desc=desc.slice(0,117)+'...';
+    if(q){
+      var re=new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi');
+      desc=desc.replace(re,'<mark>$1</mark>');
+    }
+    var updated=r.updated_at?new Date(r.updated_at).toLocaleDateString():'';
+    return '<a href="'+r.html_url+'" target="_blank" class="result">'+
+      '<div class="result-header"><span class="result-org">'+r._org+'</span><span class="result-name">'+r.name+'</span></div>'+
+      (desc?'<div class="result-desc">'+desc+'</div>':'')+
+      '<div class="result-meta">'+
+        (r.language?'<span class="result-lang"><span class="dot dot-live"></span>'+r.language+'</span>':'')+
+        (r.stargazers_count?'<span class="result-stars">★ '+r.stargazers_count+'</span>':'')+
+        '<span class="result-updated">'+updated+'</span>'+
+      '</div></a>';
+  }).join('')+(filtered.length>60?'<div style="text-align:center;padding:16px;font-family:var(--jb);font-size:10px;color:#555">Showing 60 of '+filtered.length+'</div>':'');
+}
+
+// Check URL params for initial search
+var params=new URLSearchParams(window.location.search);
+if(params.get('q')){document.getElementById('q').value=params.get('q');}
+
+loadAll();
+</script>
+</body>
+</html>
